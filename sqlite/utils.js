@@ -47,15 +47,19 @@ function createShop(xuid,name){
 function exsitsSHOP_name(name){
     let p = db.prepare(`select * from SHOPS where NAME = '${name}';`).all();
     if(p.length > 0){
-        return {has:true,count:p.length}
+        return {has:true,count:p.length,shop_id:p[0].TABLEID,owner:p[0].OWNER};
     }else{
         return {has:false};
     }
 }
 
 function exsitsSHOP_ID(table_id){
-    let p = db.prepare(`SELECT * FROM sqlite_master WHERE type = 'table' AND name = '${table_id}';`).all();
-    return {has:p.length > 0};
+    let p = db.prepare(`SELECT * FROM SHOPS WHERE TABLEID = '${table_id}';`).all();
+    if(p.length > 0){
+        return {has:true,owner:p[0].OWNER,name:p[0].NAME};
+    }else{
+        return {has:false};
+    }
 }
 
 function remSHOP(xuid,pwd){
@@ -69,10 +73,18 @@ function remSHOP(xuid,pwd){
     }
 }
 
-function getSHOP(name){
-   let o = db.prepare(`SELECT * FROM ${name};`).all();
-   return o.map(formatITEM);
+function getSHOPITEMS(name){
+    if(exsitsSHOP_ID(name).has){
+        let o = db.prepare(`SELECT * FROM ${name};`).all();
+        return o.map(formatITEM);
+    }else if(exsitsSHOP_name(name).has){
+        let o = getSHOP(exsitsSHOP_name(name).shop_id);
+        return o;
+    }else{
+        return {};
+    }
 }
+
 
 function getITEM(table_name,item_id){
     let p = db.prepare(`select * FROM ${table_name} WHERE ID = '${item_id}';`).all();
@@ -81,7 +93,6 @@ function getITEM(table_name,item_id){
     }
     return {find:false};
 }
-console.log(getITEM('SHOP1658812849811',2));
 function formatITEM(it){
     return {id:it.ID,name:it.NAME,price:it.MONEY,count:it.NUMBER,pic:it.PIC==null?{has:false}:{has:true,pic:it.PIC}};
 }
@@ -96,13 +107,22 @@ function shop_add_item(table_id,item_name,item_snbt,item_money,item_count,pic){
 }
 
 function shop_remove_item(table_id,item_id,count = 0){
-    if(count == 0){
-        // 直接删除整个
-        let p = db.prepare(`DELETE FROM ${table_id} WHERE ID = @id;`).run({id:item_id});
-        return {success:p.changes > 0};
+    let itt = getITEM(table_id,item_id);
+    if(itt.find){
+        if(count == 0){
+            // 直接删除整个
+            let p = db.prepare(`DELETE FROM ${table_id} WHERE ID = @id;`).run({id:item_id});
+            return {success:p.changes > 0};
+        }else{
+            if(itt.item.count <= count){
+                let p = db.prepare(`UPDATE FROM ${table_id} SET NUMBER = NUMBER - ${count} WHERE ID = @id;`).run({id:item_id});
+                return {success:p.changes > 0};
+            }else{
+                return {success:false,msg:'商店里没有那么多'};
+            }
+        }
     }else{
-        let p = db.prepare(`UPDATE FROM ${table_id} SET NUMBER = NUMBER - ${count} WHERE ID = @id;`).run({id:item_id});
-        return {success:p.changes > 0};
+        return {success:false,msg:'没有这个物品'};
     }
 }
 
@@ -170,12 +190,15 @@ function hasUser(xuid){
 }
 
 module.exports = {
-    getSHOP,
+    getSHOPITEMS,
     getUser,
+    getITEM,
     remSHOP,
     remUser,
     addUser,
     createShop,
     shop_add_item,
-    shop_remove_item
+    shop_remove_item,
+    exsitsSHOP_ID,
+    exsitsSHOP_name
 }

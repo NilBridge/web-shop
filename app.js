@@ -4,9 +4,9 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/shops');
-var stateRouter = require("./routes/state");
+var indexRouter = require('./routes/api/index');
+var shopsRouter = require('./routes/api/shops');
+var stateRouter = require("./routes/api/state");
 
 var app = express();
 
@@ -35,9 +35,9 @@ app.all('*', function (req, res, next) {
   }
 });
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/state', stateRouter);
+app.use('/api/', indexRouter);
+app.use('/api/shops', shopsRouter);
+app.use('/api/state', stateRouter);
 
 // 禁用缓存
 app.disable('etag');
