@@ -1,5 +1,6 @@
 const {db} = require("./index");
 const uuid = require("node-uuid");
+const { addListener } = require("../app");
 
 db.exec(`create table if not exists SHOPS(
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,8 +17,21 @@ db.exec(`create table if not exists USERS(
     PWD TEXT,
     NAME TEXT,
     SHOP TEXT,
-    HISTORY TEXT
+    HISTORY TEXT,
+    MONEY INTEGER,
+    MESSAGE TEXT
 );`);
+
+db.exec(`create table if not exists ORDERS(
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    BUY TEXT,
+    SELL TEXT,
+    ITEM TEXT,
+    SNBT TEXT,
+    COUNT INTEGER,
+    PRICE INTEGER,
+    DATE INTEGER
+);`)
 
 function createShop(xuid,name){
     console.log(`正在为用户【${xuid}】 创建商店 【${name}】`);
@@ -127,7 +141,7 @@ function shop_remove_item(table_id,item_id,count = 0){
 }
 
 function formatUSER(u){
-    return {xuid:u.XUID,name:u.NAME,shop:{has:u.SHOP != null,name:u.SHOP == null?undefined:u.SHOP},history:JSON.parse(u.HISTORY)};
+    return {xuid:u.XUID,name:u.NAME,shop:{has:u.SHOP != null,name:u.SHOP == null?undefined:u.SHOP},history:JSON.parse(u.HISTORY),money:u.MONEY,message:JSON.parse(u.MESSAGE)};
 }
 
 function getUser(uid,type){
@@ -169,7 +183,7 @@ function addUser(name,xuid,pwd){
     if(hasUser(xuid)){
         return {success:false,msg:'已经有同XUID 的用户了'};
     }
-    db.prepare(`INSERT INTO USERS VALUES (NULL,@xuid,@pwd,@name,NULL,'[]');`).run({name,xuid,pwd});
+    db.prepare(`INSERT INTO USERS VALUES (NULL,@xuid,@pwd,@name,NULL,'[]',0,'[]');`).run({name,xuid,pwd});
     return {success:true};
 }
 
@@ -189,6 +203,24 @@ function hasUser(xuid){
     return p.length > 0;
 }
 
+function addMoney(xuid,mon){
+    let p = db.prepare(`UPDATE FROM USERS SET MONEY = MONEY + ${mon} WHERE XUID = @xuid;`).run({xuid});
+}
+
+function remMoney(xuid,mon){
+    let p = db.prepare(`UPDATE FROM USERS SET MONEY = MONEY - ${mon} WHERE XUID = @xuid;`).run({xuid});
+}
+
+function user_pwd_right(xuid,pwd){
+    let p = db.prepare(`select PWD from USERS WHERE XUID = '${xuid}';`).all();
+    console.log(p);
+    if(p[0].PWD == pwd){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 module.exports = {
     getSHOPITEMS,
     getUser,
@@ -200,5 +232,8 @@ module.exports = {
     shop_add_item,
     shop_remove_item,
     exsitsSHOP_ID,
-    exsitsSHOP_name
+    exsitsSHOP_name,
+    addMoney,
+    remMoney,
+    user_pwd_right
 }

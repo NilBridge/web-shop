@@ -6,7 +6,10 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/api/index');
 var shopsRouter = require('./routes/api/shops');
-var stateRouter = require("./routes/api/state");
+var buyRouter = require("./routes/api/buy");
+var userRouter = require("./routes/api/user");
+var regRouter = require("./routes/api/reg");
+var loginRouter = require("./routes/api/login");
 
 var app = express();
 
@@ -37,7 +40,10 @@ app.all('*', function (req, res, next) {
 
 app.use('/api/', indexRouter);
 app.use('/api/shops', shopsRouter);
-app.use('/api/state', stateRouter);
+app.use('/api/buy', buyRouter);
+app.use("/api/user",userRouter);
+app.use('/api/reg',regRouter);
+app.use('/api/login',loginRouter);
 
 // 禁用缓存
 app.disable('etag');
